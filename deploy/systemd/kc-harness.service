@@ -1,0 +1,26 @@
+# kongCowork Intelligence Harness daemon (user service).
+# Install: cp deploy/systemd/kc-harness.service ~/.config/systemd/user/ &&
+#          systemctl --user daemon-reload && systemctl --user enable --now kc-harness
+# Config is read from ~/.config/kc-harness/{harnessd.env (0600), machine.json}; nothing secret here.
+[Unit]
+Description=kongCowork Intelligence Harness (harnessd)
+After=network-online.target
+# PostgreSQL and the embedding server run in Docker with restart=unless-stopped; harnessd exits when
+# the database is unreachable and systemd starts it again.
+StartLimitIntervalSec=600
+StartLimitBurst=20
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/kc-harness/bin/harnessd
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=yes
+StandardOutput=append:%h/.local/state/kc-harness/harnessd.log
+StandardError=append:%h/.local/state/kc-harness/harnessd.log
+
+[Install]
+WantedBy=default.target

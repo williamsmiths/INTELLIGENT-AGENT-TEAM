@@ -1,0 +1,42 @@
+{
+  "version": "v5-pilot-2026-11-18",
+  "applied_through": "openbot.create_agent, openbot.update_agents, openbot.update_profile, openbot.create_channel (official tools); workspace AGENTS.md = Instructions",
+  "agents": [
+    {"role_key": "product", "name": "Product Lead", "title": "Senior Product Manager & Business Analyst (V5)",
+     "instructions": ["prompts/roles/PRODUCT.md", "prompts/roles/SHARED.md"], "harness_role": "lead", "specialty": "product"},
+    {"role_key": "design", "name": "Design Lead", "title": "Senior Product Designer & UX Architect (V5)",
+     "instructions": ["prompts/roles/DESIGN.md", "prompts/roles/SHARED.md"], "harness_role": "worker", "specialty": "design"},
+    {"role_key": "engineering", "name": "Engineering Lead", "title": "Principal Software Architect & Full-stack Engineer (V5)",
+     "instructions": ["prompts/roles/ENGINEERING.md", "prompts/roles/SHARED.md"], "harness_role": "worker", "specialty": "engineering"},
+    {"role_key": "quality", "name": "Quality Lead", "title": "Principal QA Architect & Technical Reviewer (V5)",
+     "instructions": ["prompts/roles/QUALITY.md", "prompts/roles/SHARED.md"], "harness_role": "worker", "specialty": "quality"}
+  ],
+  "common_settings": {
+    "provider": "claude",
+    "model": "claude-haiku-5-5",
+    "reasoning_effort": "medium",
+    "model_note": "Haiku for the pilot budget; Sonnet 5.5 is one update_agents call away and was not measured",
+    "backup_models": {"automatic": true, "order": [{"provider": "claude", "model": "claude-haiku-5-5", "account": "second Claude account"}],
+                      "note": "backups stay on provider claude: harness hooks exist only for Claude Code"},
+    "access": "full",
+    "access_note": "OpenBot 'workspace' access makes Claude skip the workspace .claude/settings.json, which disables the harness hooks; least privilege comes from the harness sandbox (kch enroll)",
+    "computer_use": false,
+    "notifications": true,
+    "skills": [],
+    "routines": [],
+    "memory": "harness PROJECT/AGENT knowledge via kch; OpenBot channel memory isolated per channel",
+    "local_scripts": "on only during the scripted pilot; off for normal use"
+  },
+  "project_binding": {
+    "per_project": ["kch owner POST /v1/projects", "POST /v1/projects/{p}/repos", "PUT /v1/projects/{p}/limits",
+                    "PUT /v1/projects/{p}/delegate-policy", "principals + memberships (lead/worker, specialty)", "kch enroll <principal> <workspace>",
+                    "PUT /v1/projects/{p}/conversations {kind: channel|thread}"],
+    "channel": "one OpenBot channel '<project> · V5' per project, isolated: true, lead = Product Lead"
+  },
+  "rollback": [
+    "Legacy agents and their config were not changed; backup of all agent/channel/routine config: ~/backups/agents-config-20261118-0105",
+    "To remove the V5 team from a project: Owner DELETE /v1/projects/{p}/conversations/{kind}/{id} and supersede open tasks",
+    "To stop the harness: systemctl --user disable --now kc-harness (enrolled workspaces then refuse tools: fail-closed). There is no unenroll command: to free an agent, delete the harness keys (hooks, sandbox, permissions.deny, env) from <workspace>/.claude/settings.json, or delete that file for the four V5 Leads (they had none before enrollment)",
+    "Previous harnessd/kch binaries: ~/.local/share/kc-harness/bin-backup-*"
+  ]
+}

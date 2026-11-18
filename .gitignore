@@ -1,0 +1,10 @@
+infra/.env
+/bin/
+/.work/
+*.test
+coverage.out
+__pycache__/
+*.pyc
+/plans/reports/*.tmp
+/deploy/team/leads.local.json
+/deploy/team/projects.local.json

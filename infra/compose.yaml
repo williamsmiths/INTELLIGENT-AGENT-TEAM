@@ -1,0 +1,52 @@
+# PostgreSQL for the kongCowork Intelligence Harness (authoritative store).
+# Loopback only. Password comes from infra/.env (gitignored).
+name: kc-harness
+services:
+  pg:
+    image: pgvector/pgvector:pg17
+    container_name: kc-harness-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: harness
+      POSTGRES_PASSWORD: ${HARNESS_PG_PASSWORD:?set in infra/.env}
+      POSTGRES_DB: harness
+    ports:
+      - "127.0.0.1:${HARNESS_PG_PORT:-5439}:5432"
+    volumes:
+      - kc-harness-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harness -d harness"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  # Local embedding sidecar (spec S2 B.1): Hugging Face text-embeddings-inference, CPU.
+  # Loopback only; OpenAI-style POST /v1/embeddings and TEI's POST /embed. The model is
+  # downloaded once into the named volume. Model choice and numbers: evals/retrieval/README.md.
+  # bge-m3 with TEI's default --max-batch-tokens=16384 is OOM-killed at 6g during warm-up; 2048 fits
+  # (inputs longer than 2048 tokens are truncated).
+  embed:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9@sha256:2538ea1c9640d3763b15af668039d24172d063b42337b0c27796fc2be180c78d
+    container_name: kc-harness-embed
+    restart: unless-stopped
+    command:
+      - --model-id=${HARNESS_EMBED_MODEL:-BAAI/bge-m3}
+      - --revision=${HARNESS_EMBED_REVISION:-5617a9f61b028005a4858fdac845db406aefb181}
+      - --port=80
+      - --max-client-batch-size=32
+      - --max-batch-tokens=${HARNESS_EMBED_MAX_BATCH_TOKENS:-2048}
+      - --auto-truncate=true
+    ports:
+      - "127.0.0.1:${HARNESS_EMBED_PORT:-8870}:80"
+    volumes:
+      - kc-harness-embed-models:/data
+    cpus: 4
+    mem_limit: ${HARNESS_EMBED_MEM_LIMIT:-6g}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:80/health >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 300s
+volumes:
+  kc-harness-pgdata:
+  kc-harness-embed-models:
